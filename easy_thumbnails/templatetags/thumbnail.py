@@ -339,9 +339,9 @@ def margin(source, geometry_string):
         image_file = get_thumbnailer(source)
     else:
         image_file = source 
-    print image_file
+    print image_file._get_width()
     try:
-        print image_file.width
+        print image_file._get_width()
         x, y = parse_geometry(geometry_string, image_file.width/image_file.height)
         print x
         ex = x - image_file.width
