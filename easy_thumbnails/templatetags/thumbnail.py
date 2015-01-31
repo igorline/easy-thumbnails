@@ -294,8 +294,78 @@ def thumbnail_url(source, alias):
         return ''
     return thumb.url
 
+import re
+geometry_pat = re.compile(r'^(?P<x>\d+)?(?:x(?P<y>\d+))?$')
+
+def parse_geometry(geometry, ratio=None):
+    """
+    Parses a geometry string syntax and returns a (width, height) tuple
+    """
+    m = geometry_pat.match(geometry)
+
+    def syntax_error():
+        return ThumbnailParseError('Geometry does not have the correct '
+                                   'syntax: %s' % geometry)
+
+    if not m:
+        raise syntax_error()
+    x = m.group('x')
+    y = m.group('y')
+    if x is None and y is None:
+        raise syntax_error()
+    if x is not None:
+        x = int(x)
+    if y is not None:
+        y = int(y)
+        # calculate x or y proportionally if not set but we need the image ratio
+    # for this
+    if ratio is not None:
+        ratio = float(ratio)
+        if x is None:
+            x = toint(y * ratio)
+        elif y is None:
+            y = toint(x / ratio)
+    return x, y
+
+from django.db import ProgrammingError
+
+def margin(source, geometry_string):
+    margin = [0, 0, 0, 0]
+
+    print type(source)
+    print type('ssss') is str
+    if type(source) is str:
+        print get_thumbnailer(source)
+        image_file = get_thumbnailer(source)
+    else:
+        image_file = source 
+    print image_file
+    try:
+        print image_file.width
+        x, y = parse_geometry(geometry_string, image_file.width/image_file.height)
+        print x
+        ex = x - image_file.width
+        margin[3] = ex / 2
+        margin[1] = ex / 2
+
+        if ex % 2:
+            margin[1] += 1
+
+        ey = y - image_file.height
+        margin[0] = ey / 2
+        margin[2] = ey / 2
+
+        if ey % 2:
+            margin[2] += 1
+
+        return ' '.join(['%dpx' % n for n in margin])
+    except ProgrammingError:
+        print "non"
+        return ''
+
 
 register.tag(thumbnail)
 register.filter(thumbnailer)
 register.filter(thumbnailer_passive)
 register.filter(thumbnail_url)
+register.filter(margin)
